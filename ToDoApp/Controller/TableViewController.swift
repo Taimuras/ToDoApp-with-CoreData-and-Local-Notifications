@@ -12,16 +12,17 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
     var itemArray = ToDoList()
     var searchController: UISearchController!
     
+    @IBOutlet weak var searchBar: UISearchBar!
     //Outlets
     @IBOutlet weak var itemTableView: UITableView!
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       // setupSearchController()
+        // setupSearchController()
         if let items = itemArray.defaults.array(forKey: "ToDoList") as? [String]{
             itemArray.todos = itemArray.gettingData(array: items)
-           
+            
         }
         //Delegates
         itemTableView.delegate = self
@@ -29,46 +30,24 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         //Taking off the separetors and vertical indicator
         itemTableView.separatorStyle = .none
         itemTableView.showsVerticalScrollIndicator = false
-       
+        
+        searchBar.delegate = self
+        
     }
-    // Updating UserDefaults just Once here
-    override func viewDidDisappear(_ animated: Bool) {
-        itemArray.update()
-    }
+    
     // this methods for not showing second item in tabbar
     override func viewWillAppear(_ animated: Bool) {
         self.tabBarController?.delegate = self
+        
     }
-   //MARK: Search Bar
-//    func setupSearchController() {
-//        searchController = UISearchController(searchResultsController: nil)
-//        searchController.searchResultsUpdater = self
-//
-//        searchController.delegate = self
-//        searchController.searchBar.delegate = self
-//
-//        searchController.obscuresBackgroundDuringPresentation = false
-//        searchController.searchBar.placeholder = "Search"
-//
-//        searchController.hidesNavigationBarDuringPresentation = false
-//
-//        navigationItem.searchController = searchController
-//        navigationItem.hidesSearchBarWhenScrolling = false
-//        definesPresentationContext = true
-//
-//        let searchBar = searchController.searchBar
-//        searchBar.searchBarStyle = .prominent
-//
-//
-//    }
-   
-//MARK: ADDING ITEM
+    
+    
+    
+    //MARK: ADDING ITEM
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
         
         if tabBarController.selectedIndex == 1{
             tabBarController.selectedIndex = 0
-            
-            
             var textField = UITextField()
             var textField2 = UITextField()
             let alert = UIAlertController(title: "Add New Todoey Item", message: "", preferredStyle: .alert)
@@ -79,7 +58,7 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
                 newItem.description = textField2.text!
                 self.itemArray.todos.append(newItem)
                 self.itemTableView.reloadData()
-                
+                self.itemArray.update()
             }
             alert.message = "Add title and description"
             alert.addTextField { (alertTextField) in
@@ -103,35 +82,26 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
             if let addItemViewController = segue.destination as? ItemDetailViewController {
                 if let cell = sender as? UITableViewCell, let indexPath = itemTableView.indexPath(for: cell) {
                     
-                    let item = itemArray.todos[indexPath.row]
+                    let item: Item
+                    if searchBar.text == "" {
+                        item = itemArray.todos[indexPath.row]
+                        
+                    } else {
+                        item = itemArray.filteredItems[indexPath.row]
+                        
+                    }
                     addItemViewController.itemToEdit = item
                     addItemViewController.delegate = self
+                    
                 }
             }
         }
-
+        
     }
 }
 
 
-//MARK: Search Bar
-//extension TableViewController: UISearchBarDelegate, UISearchControllerDelegate{
-//
-//}
-//
-//extension TableViewController: UISearchResultsUpdating {
-//    func updateSearchResults(for searchController: UISearchController) {
-//        self.itemArray.filteredItems.removeAll()
-//
-//        let whiteSpacesCharacterSet = CharacterSet.whitespaces
-//        let stripedString = searchController.searchBar.text!.trimmingCharacters(in: whiteSpacesCharacterSet).lowercased()
-//        self.itemArray.filteredItems = itemArray.todos.filter({ (title) -> Bool in
-//            if itemArray.todos.contains(stripedString) {
-//
-//            }
-//        })
-//    }
-//}
+
 
 
 // MARK: Custom Table View
@@ -144,18 +114,34 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     }
     // number of cells
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.todos.count
+        if searchBar.text == "" {
+            return itemArray.todos.count
+        } else {
+            return itemArray.filteredItems.count
+        }
     }
     // Cell as it's like
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = itemTableView.dequeueReusableCell(withIdentifier: "ItemCell", for: indexPath) as! ItemTVC
-        let indexPaths = itemArray.todos[indexPath.row]
-        cell.titleLabel.text = indexPaths.title
-        cell.descriptionLabel.text = indexPaths.description
-        if indexPaths.done {
-            cell.itemImageView.image = UIImage(named: "Done")
+        if searchBar.text == "" {
+            let indexPaths = itemArray.todos[indexPath.row]
+            cell.titleLabel.text = indexPaths.title
+            cell.descriptionLabel.text = indexPaths.description
+            if indexPaths.done {
+                cell.itemImageView.image = UIImage(named: "Done")
+            } else {
+                cell.itemImageView.image = UIImage(named: "NotDone")
+            }
         } else {
-            cell.itemImageView.image = UIImage(named: "NotDone")
+            let indexPaths = itemArray.filteredItems[indexPath.row]
+            cell.titleLabel.text = indexPaths.title
+            cell.descriptionLabel.text = indexPaths.description
+            if indexPaths.done {
+                cell.itemImageView.image = UIImage(named: "Done")
+            } else {
+                cell.itemImageView.image = UIImage(named: "NotDone")
+            }
+            
         }
         
         if indexPath.row % 2 == 0 {
@@ -172,17 +158,39 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     // taping cells ( in this way just adding animation of taping on a cell )
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        itemArray.todos[indexPath.row].checked()
+        if searchBar.text == "" {
+            itemArray.todos[indexPath.row].checked()
+        } else {
+            let item = itemArray.filteredItems[indexPath.row]
+            let index = itemArray.todos.firstIndex(of: item)!
+            itemArray.todos[index].checked()
+            itemArray.filteredItems[indexPath.row].checked()
+        }
+        
+        
         
         itemTableView.reloadData()
+        itemArray.update()
         itemTableView.deselectRow(at: indexPath, animated: true)
         
     }
-  
+    
     //Deleting Items
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        itemArray.todos.remove(at: indexPath.row)
-        
+        if searchBar.text == "" {
+            itemArray.todos.remove(at: indexPath.row)
+            itemArray.update()
+            
+        } else {
+            
+            let item = itemArray.filteredItems[indexPath.row]
+            let index = itemArray.todos.firstIndex(of: item)!
+            itemArray.filteredItems.remove(at: indexPath.row)
+            itemArray.todos.remove(at: index)
+            
+            itemArray.update()
+            
+        }
         let indexPaths = [indexPath]
         tableView.deleteRows(at: indexPaths, with: .automatic)
     }
@@ -197,7 +205,7 @@ extension TableViewController: ItemDetailViewControllerDelegate{
     func addItemViewControllerDidCancel(_ controller: ItemDetailViewController) {
         dismiss(animated: true, completion: itemTableView.reloadData)
     }
-  
+    
     func addItemViewController(_ controller: ItemDetailViewController, didFinishEditing item: Item) {
         
         var index: Int = 0
@@ -207,19 +215,47 @@ extension TableViewController: ItemDetailViewControllerDelegate{
                 index = i
             }
         }
-        
         itemArray.todos[index] = item
-        if itemArray.todos[index].done {
-            itemArray.todos[index].checked()
-        }
         
+        var filteredIndex: Int = 0
+        for i in 0 ..< itemArray.filteredItems.count {
+            if itemArray.filteredItems[i].title == item.title {
+                filteredIndex = i
+            }
+        }
+        itemArray.filteredItems[filteredIndex] = item
         itemTableView.reloadData()
-
+        itemArray.update()
+        
         dismiss(animated: true, completion: nil)
- 
+        
     }
-
-
+    
+    
 }
+
+
+extension TableViewController: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        itemArray.filteredItems = itemArray.todos
+        itemArray.filteredItems = []
+        if searchText == "" {
+            itemArray.filteredItems.removeAll()
+        } else {
+            for item in itemArray.todos {
+                if item.title.lowercased().contains(searchText.lowercased()){
+                    
+                    itemArray.filteredItems.append(item)
+                }
+            }
+            
+        }
+        itemTableView.reloadData()
+    }
+    
+    
+}
+
 
 

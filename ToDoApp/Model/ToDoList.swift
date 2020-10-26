@@ -12,7 +12,9 @@ class ToDoList{
     var todos: [Item] = []
     var savingArray: [String] = []
    
-    var filteredItems = [Item]()
+    var filteredItems: [Item]!
+    
+    
     let defaults = UserDefaults.standard
     init() {
         
@@ -28,8 +30,6 @@ class ToDoList{
                 savingArray.append("False")
             }
         }
-        
-        
         
         return savingArray
     }
@@ -53,14 +53,11 @@ class ToDoList{
     }
     
     func update(){
+            savingArray.removeAll()
             defaults.removeObject(forKey: "ToDoList")
             savingArray = castingTo(array: todos)
             defaults.setValue(savingArray, forKey: "ToDoList")
     }
-    
-//    defaults.removeObject(forKey: "ToDoList")
-//    itemArray.savingArray = itemArray.castingTo(array: itemArray.todos)
-//    defaults.setValue(itemArray.savingArray, forKey: "ToDoList")
-    
+
   
 }
