@@ -207,23 +207,24 @@ extension TableViewController: ItemDetailViewControllerDelegate{
     }
     
     func addItemViewController(_ controller: ItemDetailViewController, didFinishEditing item: Item) {
-        
-        var index: Int = 0
-        
-        for i in 0 ..< itemArray.todos.count {
-            if itemArray.todos[i].title == item.title {
-                index = i
+        if searchBar.text == "" {
+            var index: Int = 0
+            
+            for i in 0 ..< itemArray.todos.count {
+                if itemArray.todos[i].title == item.title {
+                    index = i
+                }
             }
-        }
-        itemArray.todos[index] = item
-        
-        var filteredIndex: Int = 0
-        for i in 0 ..< itemArray.filteredItems.count {
-            if itemArray.filteredItems[i].title == item.title {
-                filteredIndex = i
+            itemArray.todos[index] = item
+        } else {
+            var filteredIndex: Int = 0
+            for i in 0 ..< itemArray.filteredItems.count {
+                if itemArray.filteredItems[i].title == item.title {
+                    filteredIndex = i
+                }
             }
+            itemArray.filteredItems[filteredIndex] = item
         }
-        itemArray.filteredItems[filteredIndex] = item
         itemTableView.reloadData()
         itemArray.update()
         
