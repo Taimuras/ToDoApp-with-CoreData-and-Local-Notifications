@@ -29,6 +29,7 @@ class ToDoList{
             } else if item.done == false {
                 savingArray.append("False")
             }
+            savingArray.append(String(item.itemIndex))
         }
         
         return savingArray
@@ -36,7 +37,7 @@ class ToDoList{
     
     func gettingData(array: [String]) -> [Item] {
         
-        for i in stride(from: 0, to: array.count - 1, by: 3) {
+        for i in stride(from: 0, to: array.count - 1, by: 4) {
             var item = Item()
             item.title = array[i]
             item.description = array[i + 1]
@@ -45,6 +46,7 @@ class ToDoList{
             }else if array[i + 2] == "False"{
                 item.done = false
             }
+            item.itemIndex = Int(array[i + 3])!
             todos.append(item)
         }
         

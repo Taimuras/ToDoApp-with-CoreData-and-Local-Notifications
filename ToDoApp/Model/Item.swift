@@ -12,6 +12,7 @@ struct Item: Equatable{
     var title: String = ""
     var description: String = ""
     var done: Bool = false
+    var itemIndex: Int = 0
     
     
     mutating func checked() {

@@ -24,6 +24,7 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
             itemArray.todos = itemArray.gettingData(array: items)
             
         }
+        
         //Delegates
         itemTableView.delegate = self
         itemTableView.dataSource = self
@@ -57,8 +58,13 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
                 newItem.title = textField.text!
                 newItem.description = textField2.text!
                 self.itemArray.todos.append(newItem)
+                
+                for i in 0 ..< self.itemArray.todos.count{
+                    self.itemArray.todos[i].itemIndex = i
+                }
                 self.itemTableView.reloadData()
                 self.itemArray.update()
+                print(self.itemArray.todos)
             }
             alert.message = "Add title and description"
             alert.addTextField { (alertTextField) in
@@ -157,6 +163,7 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     
     // taping cells ( in this way just adding animation of taping on a cell )
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        print(indexPath.row)
         
         if searchBar.text == "" {
             itemArray.todos[indexPath.row].checked()
@@ -183,14 +190,18 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
             
         } else {
             
-            let item = itemArray.filteredItems[indexPath.row]
-            let index = itemArray.todos.firstIndex(of: item)!
+            let item = itemArray.filteredItems[indexPath.row].itemIndex
+            let index = itemArray.todos[item].itemIndex
             itemArray.filteredItems.remove(at: indexPath.row)
             itemArray.todos.remove(at: index)
             
             itemArray.update()
             
         }
+        for i in 0 ..< itemArray.todos.count{
+            itemArray.todos[i].itemIndex = i
+        }
+        print(itemArray.todos)
         let indexPaths = [indexPath]
         tableView.deleteRows(at: indexPaths, with: .automatic)
     }
@@ -208,14 +219,8 @@ extension TableViewController: ItemDetailViewControllerDelegate{
     
     func addItemViewController(_ controller: ItemDetailViewController, didFinishEditing item: Item) {
         if searchBar.text == "" {
-            var index: Int = 0
             
-            for i in 0 ..< itemArray.todos.count {
-                if itemArray.todos[i].title == item.title {
-                    index = i
-                }
-            }
-            itemArray.todos[index] = item
+            itemArray.todos[item.itemIndex] = item
         } else {
             var filteredIndex: Int = 0
             for i in 0 ..< itemArray.filteredItems.count {
@@ -223,7 +228,9 @@ extension TableViewController: ItemDetailViewControllerDelegate{
                     filteredIndex = i
                 }
             }
+            
             itemArray.filteredItems[filteredIndex] = item
+            itemArray.todos[item.itemIndex] = item
         }
         itemTableView.reloadData()
         itemArray.update()
