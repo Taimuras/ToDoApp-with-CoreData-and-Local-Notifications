@@ -1,29 +1,33 @@
-//
-//  ViewController.swift
-//  ToDoApp
-//
-//  Created by tami on 10/21/20.
-//
 
 import UIKit
+import CoreData
+import UserNotifications
 
 class TableViewController: UIViewController, UITabBarControllerDelegate{
     
     var itemArray = ToDoList()
     var searchController: UISearchController!
     
-    @IBOutlet weak var searchBar: UISearchBar!
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let center = UNUserNotificationCenter.current()
     //Outlets
+    @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var itemTableView: UITableView!
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // setupSearchController()
-        if let items = itemArray.defaults.array(forKey: "ToDoList") as? [String]{
-            itemArray.todos = itemArray.gettingData(array: items)
+        
+        self.hideKeyboardWhenTappedAround()
+        
+        // Notification Center
+        center.requestAuthorization(options: [.alert, .sound]) { (grabted, error) in
             
         }
+        //
+        
+        // Core Data Loading Items
+        loadItems()
         
         //Delegates
         itemTableView.delegate = self
@@ -34,13 +38,16 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         
         searchBar.delegate = self
         
+        
+        // this methods for not showing second item in tabbar
+        self.tabBarController?.delegate = self
     }
     
     // this methods for not showing second item in tabbar
-    override func viewWillAppear(_ animated: Bool) {
-        self.tabBarController?.delegate = self
-        
-    }
+    //    override func viewWillAppear(_ animated: Bool) {
+    //        self.tabBarController?.delegate = self
+    //
+    //    }
     
     
     
@@ -49,22 +56,54 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         
         if tabBarController.selectedIndex == 1{
             tabBarController.selectedIndex = 0
+            
+            // Adding Date Picker to an alert Dialog and possitioned
+            let myDatePicker: UIDatePicker = UIDatePicker()
+            myDatePicker.timeZone = .current
+            myDatePicker.frame = CGRect(x: 0, y: 150, width: 270, height: 50)
+            
+            // Adding TextFields into Alert Dialog
             var textField = UITextField()
             var textField2 = UITextField()
             let alert = UIAlertController(title: "Add New Todoey Item", message: "", preferredStyle: .alert)
+            alert.view.addSubview(myDatePicker)
+            
+            // Custom Height of Alert Dialog window
+            let height:NSLayoutConstraint = NSLayoutConstraint(item: alert.view!, attribute: NSLayoutConstraint.Attribute.height, relatedBy: NSLayoutConstraint.Relation.equal, toItem: nil, attribute: NSLayoutConstraint.Attribute.notAnAttribute, multiplier: 1, constant: 250)
+            alert.view.addConstraint(height)
+            
             let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
                 // what will happen once when the user will click ADD Button UIALERT
-                var newItem = Item()
+                
+                
+                let newItem = Item(context: self.context)
                 newItem.title = textField.text!
-                newItem.description = textField2.text!
+                newItem.titleDescription = textField2.text!
+                newItem.done = false
                 self.itemArray.todos.append(newItem)
                 
                 for i in 0 ..< self.itemArray.todos.count{
-                    self.itemArray.todos[i].itemIndex = i
+                    self.itemArray.todos[i].itemIndex = Int32(i)
                 }
-                self.itemTableView.reloadData()
-                self.itemArray.update()
-                print(self.itemArray.todos)
+                
+                
+                // Notification Set
+                let content = UNMutableNotificationContent()
+                content.title = newItem.title!
+                content.body = newItem.titleDescription!
+                
+                let date = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: myDatePicker.date)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: date, repeats: false)
+                
+                let uuidString = UUID().uuidString
+                let notificationRequest = UNNotificationRequest(identifier: uuidString, content: content, trigger: trigger)
+                self.center.add(notificationRequest) { (error) in
+                    
+                }
+                
+                self.saveItems()
+                
+                
             }
             alert.message = "Add title and description"
             alert.addTextField { (alertTextField) in
@@ -82,6 +121,26 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
             
         }
     }
+    
+    func saveItems(){
+        do {
+            try context.save()
+        } catch  {
+            print("Error saving context \(error)")
+        }
+        self.itemTableView.reloadData()
+    }
+    
+    func loadItems() {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray.todos = try context.fetch(request)
+        } catch  {
+            print("Error with loading context \(error)")
+        }
+        
+    }
+    
     // Segue Preparation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ItemToEdit" {
@@ -106,18 +165,14 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
     }
 }
 
-
-
-
-
 // MARK: Custom Table View
 // This extension is used for making custom table view with custom table Cell
 extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     
     // height of cell
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 60
-    }
+//    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+//        return 60
+//    }
     // number of cells
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if searchBar.text == "" {
@@ -132,7 +187,7 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
         if searchBar.text == "" {
             let indexPaths = itemArray.todos[indexPath.row]
             cell.titleLabel.text = indexPaths.title
-            cell.descriptionLabel.text = indexPaths.description
+            cell.descriptionLabel.text = indexPaths.titleDescription
             if indexPaths.done {
                 cell.itemImageView.image = UIImage(named: "Done")
             } else {
@@ -141,7 +196,7 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
         } else {
             let indexPaths = itemArray.filteredItems[indexPath.row]
             cell.titleLabel.text = indexPaths.title
-            cell.descriptionLabel.text = indexPaths.description
+            cell.descriptionLabel.text = indexPaths.titleDescription
             if indexPaths.done {
                 cell.itemImageView.image = UIImage(named: "Done")
             } else {
@@ -163,56 +218,54 @@ extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     
     // taping cells ( in this way just adding animation of taping on a cell )
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(indexPath.row)
         
         if searchBar.text == "" {
-            itemArray.todos[indexPath.row].checked()
+            itemArray.todos[indexPath.row].done = !itemArray.todos[indexPath.row].done
         } else {
-            let item = itemArray.filteredItems[indexPath.row]
-            let index = itemArray.todos.firstIndex(of: item)!
-            itemArray.todos[index].checked()
-            itemArray.filteredItems[indexPath.row].checked()
+            for i in itemArray.todos {
+                let item = itemArray.filteredItems[indexPath.row]
+                if i.itemIndex == item.itemIndex {
+                    i.done = !i.done
+                }
+            }
         }
         
+        saveItems()
         
-        
-        itemTableView.reloadData()
-        itemArray.update()
         itemTableView.deselectRow(at: indexPath, animated: true)
         
     }
     
+    
     //Deleting Items
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if searchBar.text == "" {
+            
+            context.delete(itemArray.todos[indexPath.row])
             itemArray.todos.remove(at: indexPath.row)
-            itemArray.update()
             
+            for i in 0 ..< self.itemArray.todos.count{
+                self.itemArray.todos[i].itemIndex = Int32(i)
+            }
         } else {
+            let deleteItemIndex = Int(itemArray.filteredItems[indexPath.row].itemIndex)
+            context.delete(itemArray.todos[deleteItemIndex])
+            itemArray.todos.remove(at: deleteItemIndex)
             
-            let item = itemArray.filteredItems[indexPath.row].itemIndex
-            let index = itemArray.todos[item].itemIndex
+            for i in 0 ..< self.itemArray.todos.count{
+                self.itemArray.todos[i].itemIndex = Int32(i)
+            }
             itemArray.filteredItems.remove(at: indexPath.row)
-            itemArray.todos.remove(at: index)
-            
-            itemArray.update()
-            
         }
-        for i in 0 ..< itemArray.todos.count{
-            itemArray.todos[i].itemIndex = i
-        }
-        print(itemArray.todos)
-        let indexPaths = [indexPath]
-        tableView.deleteRows(at: indexPaths, with: .automatic)
+        
+        saveItems()
+        
     }
-    
-    
-    
-    
 }
 
 // MARK: Editing Items
 extension TableViewController: ItemDetailViewControllerDelegate{
+    
     func addItemViewControllerDidCancel(_ controller: ItemDetailViewController) {
         dismiss(animated: true, completion: itemTableView.reloadData)
     }
@@ -220,30 +273,25 @@ extension TableViewController: ItemDetailViewControllerDelegate{
     func addItemViewController(_ controller: ItemDetailViewController, didFinishEditing item: Item) {
         if searchBar.text == "" {
             
-            itemArray.todos[item.itemIndex] = item
+            itemArray.todos[Int(item.itemIndex)] = item
         } else {
-            var filteredIndex: Int = 0
-            for i in 0 ..< itemArray.filteredItems.count {
-                if itemArray.filteredItems[i].title == item.title {
-                    filteredIndex = i
+            itemArray.todos[Int(item.itemIndex)] = item
+            for i in 0 ..< itemArray.filteredItems.count{
+                if itemArray.filteredItems[i].itemIndex == item.itemIndex {
+                    itemArray.filteredItems[i] = item
                 }
             }
-            
-            itemArray.filteredItems[filteredIndex] = item
-            itemArray.todos[item.itemIndex] = item
         }
-        itemTableView.reloadData()
-        itemArray.update()
+        
+        saveItems()
         
         dismiss(animated: true, completion: nil)
-        
     }
-    
-    
 }
 
-
+// MARK: Search Bar Delegate
 extension TableViewController: UISearchBarDelegate {
+    
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
         itemArray.filteredItems = itemArray.todos
@@ -252,8 +300,7 @@ extension TableViewController: UISearchBarDelegate {
             itemArray.filteredItems.removeAll()
         } else {
             for item in itemArray.todos {
-                if item.title.lowercased().contains(searchText.lowercased()){
-                    
+                if item.title!.lowercased().contains(searchText.lowercased()){
                     itemArray.filteredItems.append(item)
                 }
             }
@@ -261,9 +308,18 @@ extension TableViewController: UISearchBarDelegate {
         }
         itemTableView.reloadData()
     }
-    
-    
 }
-
+extension UIViewController {
+    
+    func hideKeyboardWhenTappedAround() {
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(UIViewController.dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+    
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
+    }
+}
 
 

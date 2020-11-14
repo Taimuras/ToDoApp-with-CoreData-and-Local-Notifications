@@ -1,13 +1,5 @@
-//
-//  ItemTVC.swift
-//  ToDoApp
-//
-//  Created by tami on 10/21/20.
-//
-//
-import UIKit
 
-// going to Model
+import UIKit
 
 // Cells class to make my custom cell
 class ItemTVC: UITableViewCell {

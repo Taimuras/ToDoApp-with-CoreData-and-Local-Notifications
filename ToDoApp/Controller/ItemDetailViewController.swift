@@ -1,9 +1,3 @@
-//
-//  ItemDetailTableViewController.swift
-//  ToDoApp
-//
-//  Created by tami on 10/23/20.
-//
 
 import UIKit
 
@@ -17,16 +11,17 @@ class ItemDetailViewController: UIViewController {
     weak var todoList: ToDoList?
     var itemToEdit: Item?
     
-    
-    
     @IBOutlet weak var editButton: UIButton!
     @IBOutlet weak var textField: UITextField!
     @IBOutlet weak var titleLabel: UILabel!
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.hideKeyboardWhenTappedAround()
+        textField.delegate = self
         if let item = itemToEdit {
             titleLabel.text = item.title
-            textField.text = item.description
+            textField.text = item.titleDescription
             editButton.isEnabled = true
         }
         
@@ -35,19 +30,16 @@ class ItemDetailViewController: UIViewController {
     
     @IBAction func editButtonTapped(_ sender: Any?) {
 //        itemToEdit?.description = textField.text!
-        if var item = itemToEdit, let text = textField.text {
-            item.description = text
+        if let item = itemToEdit, let text = textField.text {
+            item.titleDescription = text
             delegate?.addItemViewController(self, didFinishEditing: item)
         }
-        
-        
     }
     @IBAction func cancelButtonTapped(_ sender: Any?) {
         print("Cancel Button Tapped")
         //dismiss(animated: true, completion: nil)
         delegate?.addItemViewControllerDidCancel(self)
     }
-    
     
     override func viewWillAppear(_ animated: Bool) {
         textField.becomeFirstResponder()
@@ -56,10 +48,7 @@ class ItemDetailViewController: UIViewController {
 
 
 extension ItemDetailViewController: UITextFieldDelegate{
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-        return false
-    }
+    
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         guard let oldText = textField.text,
               let stringRange = Range(range, in:oldText) else {
@@ -74,4 +63,9 @@ extension ItemDetailViewController: UITextFieldDelegate{
         }
         return true
     }
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+    
 }
