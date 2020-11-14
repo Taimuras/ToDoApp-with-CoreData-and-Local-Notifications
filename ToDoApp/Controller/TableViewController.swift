@@ -21,10 +21,9 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         self.hideKeyboardWhenTappedAround()
         
         // Notification Center
-        center.requestAuthorization(options: [.alert, .sound]) { (grabted, error) in
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { (grabted, error) in
             
         }
-        //
         
         // Core Data Loading Items
         loadItems()
@@ -38,18 +37,9 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         
         searchBar.delegate = self
         
-        
         // this methods for not showing second item in tabbar
         self.tabBarController?.delegate = self
     }
-    
-    // this methods for not showing second item in tabbar
-    //    override func viewWillAppear(_ animated: Bool) {
-    //        self.tabBarController?.delegate = self
-    //
-    //    }
-    
-    
     
     //MARK: ADDING ITEM
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
@@ -57,20 +47,21 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
         if tabBarController.selectedIndex == 1{
             tabBarController.selectedIndex = 0
             
-            // Adding Date Picker to an alert Dialog and possitioned
-            let myDatePicker: UIDatePicker = UIDatePicker()
-            myDatePicker.timeZone = .current
-            myDatePicker.frame = CGRect(x: 0, y: 150, width: 270, height: 50)
-            
             // Adding TextFields into Alert Dialog
             var textField = UITextField()
             var textField2 = UITextField()
             let alert = UIAlertController(title: "Add New Todoey Item", message: "", preferredStyle: .alert)
-            alert.view.addSubview(myDatePicker)
+            
             
             // Custom Height of Alert Dialog window
             let height:NSLayoutConstraint = NSLayoutConstraint(item: alert.view!, attribute: NSLayoutConstraint.Attribute.height, relatedBy: NSLayoutConstraint.Relation.equal, toItem: nil, attribute: NSLayoutConstraint.Attribute.notAnAttribute, multiplier: 1, constant: 250)
             alert.view.addConstraint(height)
+            
+            // Adding Date Picker to an alert Dialog and possitioned
+            let myDatePicker: UIDatePicker = UIDatePicker()
+            myDatePicker.timeZone = .current
+            myDatePicker.frame = CGRect(x: alert.view.frame.width / 18, y: 0, width: alert.view.frame.width, height: alert.view.frame.height / 2.35)
+            alert.view.addSubview(myDatePicker)
             
             let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
                 // what will happen once when the user will click ADD Button UIALERT
@@ -91,6 +82,8 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
                 let content = UNMutableNotificationContent()
                 content.title = newItem.title!
                 content.body = newItem.titleDescription!
+                content.sound = UNNotificationSound.default
+                
                 
                 let date = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: myDatePicker.date)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: date, repeats: false)
@@ -170,9 +163,9 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
 extension TableViewController: UITableViewDelegate, UITableViewDataSource{
     
     // height of cell
-//    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-//        return 60
-//    }
+    //    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+    //        return 60
+    //    }
     // number of cells
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if searchBar.text == "" {
