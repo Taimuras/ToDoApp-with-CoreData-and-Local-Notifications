@@ -60,7 +60,7 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
             // Adding Date Picker to an alert Dialog and possitioned
             let myDatePicker: UIDatePicker = UIDatePicker()
             myDatePicker.timeZone = .current
-            myDatePicker.frame = CGRect(x: alert.view.frame.width / 18, y: 0, width: alert.view.frame.width, height: alert.view.frame.height / 2.35)
+            myDatePicker.frame = CGRect(x: 20, y: 150, width: 280, height: 50)
             alert.view.addSubview(myDatePicker)
             
             let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
@@ -108,6 +108,7 @@ class TableViewController: UIViewController, UITabBarControllerDelegate{
                 alertTextField2.placeholder = "Type Details"
                 textField2 = alertTextField2
             }
+            
             alert.addAction(action)
             present(alert, animated: true, completion: nil)
             
